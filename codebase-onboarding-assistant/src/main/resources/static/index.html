@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Codebase Onboarding Assistant</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #1e1e2e;
+            color: #e0e0e0;
+        }
+        h1 { font-size: 1.5rem; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0;
+            box-sizing: border-box;
+            background: #2a2a3c;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:disabled { background: #555; cursor: not-allowed; }
+        #result {
+            margin-top: 20px;
+            padding: 16px;
+            background: #2a2a3c;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            display: none;
+        }
+        #status { margin-top: 12px; color: #999; }
+
+        #result h1, #result h2, #result h3 {
+    color: #a5b4fc;
+    margin-top: 20px;
+    margin-bottom: 8px;
+}
+#result strong { color: #fff; }
+#result ul, #result ol {
+    padding-left: 20px;
+}
+#result li { margin-bottom: 6px; }
+#result code {
+    background: #1e1e2e;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+        #result {
+    background: transparent;
+    padding: 0;
+}
+#result > h1, #result > h2 {
+    background: #2a2a3c;
+    padding: 12px 16px;
+    border-left: 4px solid #4f46e5;
+    border-radius: 6px;
+    margin-top: 24px;
+}
+#result > ul, #result > ol, #result > p {
+    background: #24243a;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+    </style>
+</head>
+<body>
+
+<h1>Codebase Onboarding Assistant</h1>
+<p>Enter a public GitHub repo and get a generated "start here" guide.</p>
+
+<label>Owner (e.g. octocat)</label>
+<input id="owner" type="text" placeholder="octocat">
+
+<label>Repo (e.g. Spoon-Knife)</label>
+<input id="repo" type="text" placeholder="Spoon-Knife">
+
+<label>Branch (optional, defaults to main)</label>
+<input id="branch" type="text" placeholder="main">
+
+<button id="generateBtn" onclick="generateGuide()">Generate Guide</button>
+
+<div id="status"></div>
+<div id="result"></div>
+
+<script>
+    async function generateGuide() {
+        const owner = document.getElementById('owner').value.trim();
+        const repo = document.getElementById('repo').value.trim();
+        const branch = document.getElementById('branch').value.trim() || 'main';
+        const btn = document.getElementById('generateBtn');
+        const status = document.getElementById('status');
+        const result = document.getElementById('result');
+
+        if (!owner || !repo) {
+            status.textContent = 'Please enter both owner and repo.';
+            return;
+        }
+
+        btn.disabled = true;
+        status.textContent = 'Generating guide... this can take 10-30 seconds.';
+        result.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/generate-guide', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ owner, repo, branch })
+            });
+
+            if (!response.ok) {
+                throw new Error('Server returned ' + response.status);
+            }
+
+            const data = await response.json();
+            status.textContent = '';
+            result.innerHTML = marked.parse(data.guide);
+            result.style.display = 'block';
+        } catch (err) {
+            status.textContent = 'Error: ' + err.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
